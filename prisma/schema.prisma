@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  username    String @unique
+  password String
+  @@map("users")
+}
+
+model Student {
+  id                Int     @id @default(autoincrement())
+  name              String
+  ipk               Float
+  income            Float
+  dependents        Int
+  achievement_score Float
+  organization_score Float
+  semester          Int
+
+  @@map("students")
+}
+
+model Criterion {
+  id   Int    @id @default(autoincrement())
+  name String
+  type String
+
+  weights Weight[]
+
+  @@map("criteria")
+}
+
+model Weight {
+  id          Int       @id @default(autoincrement())
+  criterion_id Int
+  weight      Float
+
+  criterion   Criterion @relation(fields: [criterion_id], references: [id])
+  @@map("weights")
+}
