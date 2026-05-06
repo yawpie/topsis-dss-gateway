@@ -16,39 +16,74 @@ datasource db {
 
 model User {
   id       Int    @id @default(autoincrement())
-  username    String @unique
+  username String @unique
   password String
+
   @@map("users")
 }
 
 model Student {
-  id                Int     @id @default(autoincrement())
-  name              String
-  ipk               Float
-  income            Float
-  dependents        Int
-  achievement_score Float
+  id                 Int    @id @default(autoincrement())
+  unique_name        String @unique
+  name               String
+  ipk                Float
+  income             Float
+  dependents         Int
+  achievement_score  Float
   organization_score Float
-  semester          Int
+  semester           Int
+
+  results Results?
 
   @@map("students")
+}
+
+model Results {
+  id         Int   @id @default(autoincrement())
+  student_id Int   @unique
+  score      Float
+  rank       Int
+
+  student Student @relation(fields: [student_id], references: [id])
+
+  @@index([student_id], map: "idx_student_id")
+  @@map("results")
 }
 
 model Criterion {
   id   Int    @id @default(autoincrement())
   name String
-  type String
+  type CriterionType
 
   weights Weight[]
 
   @@map("criteria")
 }
-
+enum CriterionType {
+  BENEFIT
+  COST
+}
 model Weight {
-  id          Int       @id @default(autoincrement())
+  id           Int   @id @default(autoincrement())
   criterion_id Int
-  weight      Float
+  weight       Float
 
-  criterion   Criterion @relation(fields: [criterion_id], references: [id])
+  criterion Criterion @relation(fields: [criterion_id], references: [id])
+
   @@map("weights")
+}
+
+model Process {
+  id        Int           @id @default(autoincrement())
+  createdAt DateTime      @default(now())
+  status    ProcessStatus
+
+  @@map("processes")
+}
+
+enum ProcessStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
