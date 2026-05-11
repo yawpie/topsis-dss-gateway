@@ -52,25 +52,16 @@ model Results {
 
 model Criterion {
   id   Int    @id @default(autoincrement())
-  name String
+  name String @unique
   type CriterionType
-
-  weights Weight[]
+  weight Float
+  
 
   @@map("criteria")
 }
 enum CriterionType {
   BENEFIT
   COST
-}
-model Weight {
-  id           Int   @id @default(autoincrement())
-  criterion_id Int
-  weight       Float
-
-  criterion Criterion @relation(fields: [criterion_id], references: [id])
-
-  @@map("weights")
 }
 
 model Process {

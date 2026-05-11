@@ -4,10 +4,14 @@ const port = process.env.PORT || 3000;
 import { prisma } from "./lib/prisma";
 import morgan from "morgan";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { createPrismaUtils, HttpError } from "@yawpie/prisma-handler";
 import { sendData, sendError } from "./utils/send";
 import bcrypt from "bcrypt";
+import router from "./topsis";
+import criterionRouter from "./criterion";
+import { generateRefreshToken, generateToken } from "./utils/jwt";
 
 const allowedOrigin =
   process.env.ALLOWED_ORIGIN?.split(",").map((origin) => origin.trim()) || [];
@@ -34,12 +38,11 @@ app.use(
   }),
 );
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-const validateLoginRequest = (
-  req: Request,
-  res: Response,
-  next: () => void,
-) => {
+const validateAuthRequest = (req: Request, res: Response, next: () => void) => {
   const { username, password } = req.body;
   if (!username || typeof username !== "string") {
     sendError(
@@ -56,16 +59,13 @@ const validateLoginRequest = (
   }
 };
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 app.get("/", (req, res) => {
   sendData(res, null, "topsis-spk v1.0.0 API is running");
 });
 
 const handledPrisma = createPrismaUtils(prisma);
 
-app.post("/register", validateLoginRequest, async (req, res) => {
+app.post("/register", validateAuthRequest, async (req, res) => {
   // Handle POST request to /register
   try {
     const { username, password } = req.body;
@@ -79,7 +79,7 @@ app.post("/register", validateLoginRequest, async (req, res) => {
         },
       }),
     );
-    sendData(res, newUser, "added new user");
+    sendData(res, undefined, "added new user");
   } catch (error) {
     console.error(error);
 
@@ -91,21 +91,42 @@ app.post("/register", validateLoginRequest, async (req, res) => {
   }
 });
 
-app.post("/login", validateLoginRequest, async (req, res) => {
-  // todo add password verification
-  const { username } = req.body;
-
+app.post("/login", validateAuthRequest, async (req, res) => {
+  const { username, password } = req.body;
+  // const hashedPassword = await bcrypt.hash(password, 10);
   try {
     const user = await handledPrisma.handleNotFound(() =>
       prisma.user.findUnique({
         where: { username },
       }),
     );
-
     if (!user) {
       throw new HttpError("Invalid username or password", 401);
     }
-    sendData(res, user, "Login successful");
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new HttpError("Invalid password", 401);
+    }
+
+    const refreshToken = generateRefreshToken({ userId: user.id });
+    const accessToken = generateToken({ userId: user.id }, "15m");
+
+    res
+      .status(200)
+      .cookie("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      })
+      .cookie("access_token", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      })
+      .json({ message: "Login successful", access_token: accessToken });
+    // sendData(res, user, "Login successful");
   } catch (error) {
     console.error(error);
     sendError(
@@ -120,46 +141,8 @@ app.post("/login", validateLoginRequest, async (req, res) => {
     );
   }
 });
-
-// ipk               Float
-//   income            Float
-//   dependents        Int
-//   achievement_score Float
-//   organization_score Float
-//   semester          Int
-
-app.post("/students", async (req, res) => {
-  try {
-    const {
-      name,
-      ipk,
-      income,
-      dependents,
-      achievement_score,
-      organization_score,
-      semester,
-    } = req.body;
-
-    // if (!name || typeof name !== "string") {
-    //   throw new HttpError("Name is required and must be a string", 400);
-    // }
-    // const newStudent = await handledPrisma.handleWrite(() =>
-    //   prisma.student.create({
-    //     data: {
-    //       name,
-    //     },
-    //   }),
-    // );
-    // sendData(res, newStudent, "added new student");
-  } catch (error) {
-    console.error(error);
-    if (error instanceof HttpError) {
-      sendError(res, error, error.status, error.message);
-      return;
-    }
-    sendError(res, error);
-  }
-});
+app.use("/", router);
+app.use("/", criterionRouter);
 
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`);

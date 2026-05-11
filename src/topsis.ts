@@ -21,6 +21,33 @@ import { sendData, sendError } from "./utils/send";
 import { Router } from "express";
 import { upload } from "./middlewares/uploadMiddleware";
 import { apiPost } from "./utils/apiClient";
+import { paginate } from "./utils/pagination";
+import authMiddleware from "./middlewares/authMiddleware";
+
+const handledPrisma = createPrismaUtils(prisma);
+
+type CriterionBody = {
+  name: string;
+  weight: number;
+  type: "BENEFIT" | "COST";
+};
+
+const getCriterion = async () => {
+  const criteria = await handledPrisma.handleNotFound(() =>
+    prisma.criterion.findMany({
+      select: {
+        name: true,
+        weight: true,
+        type: true,
+      },
+    }),
+  );
+  return criteria?.map((criterion) => ({
+    name: criterion.name,
+    weight: criterion.weight,
+    type: criterion.type,
+  })) || null;
+};
 
 type Students = {
   name: string;
@@ -53,9 +80,8 @@ type TopsisDataResult = {
   ranking?: number;
 };
 
-const handledPrisma = createPrismaUtils(prisma);
 const router = Router();
-router.post("/upload", upload.single("file"), async (req, res) => {
+router.post("/upload", authMiddleware, upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       sendError(res, new HttpError("No files uploaded", 400));
@@ -63,49 +89,56 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     }
 
     const file = req.file;
-
+    const form = new FormData();
+    let criteria: CriterionBody[] | null = await getCriterion();
+    if (!criteria) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "No criteria found in database, using default criteria for development",
+        );
+        criteria = [
+          {
+            name: "ipk",
+            weight: 0.3,
+            type: "BENEFIT",
+          },
+          {
+            name: "penghasilan_ortu",
+            weight: 0.2,
+            type: "COST",
+          },
+          {
+            name: "jumlah_tanggungan",
+            weight: 0.1,
+            type: "COST",
+          },
+          {
+            name: "skor_prestasi",
+            weight: 0.2,
+            type: "BENEFIT",
+          },
+          {
+            name: "keaktifan_organisasi",
+            weight: 0.2,
+            type: "BENEFIT",
+          },
+        ];
+      } else {
+        throw new HttpError("No criteria found in database, please configure criteria first", 500);
+      }
+    }
+    form.append("criterionBody", JSON.stringify(criteria));
+    form.append("file", new Blob([new Uint8Array(file.buffer)]), file.originalname);
     const calculateResult: TopsisProcessorResponseRaw = await apiPost(
-      "/calculate-np",
-      {
-        file,
-      },
-    );
-    const students: Students[] = calculateResult.data.map((item) => ({
-      name: item.nama,
-      ipk: item.kriteria.ipk,
-      income: item.kriteria.penghasilan_ortu,
-      dependents: item.kriteria.jumlah_tanggungan,
-      achievement_score:
-        typeof item.kriteria.skor_prestasi === "number"
-          ? item.kriteria.skor_prestasi
-          : 0,
-      organization_score:
-        typeof item.kriteria.keaktifan_organisasi === "number"
-          ? item.kriteria.keaktifan_organisasi
-          : 0,
-      semester: item.kriteria.semester,
-      unique_name: item.unique_name,
-    }));
-
-    const result = await handledPrisma.handleWrite(() =>
-      prisma.student.createMany({
-        data: students,
-      }),
+      "/calculate",
+      form,
     );
 
     sendData(
       res,
-      { insertedCount: result.count },
-      "Files uploaded and processed successfully",
+      { count: calculateResult.data.length || 0 },
     );
 
-    // const resultTransaction = await prisma.$transaction(async (tx) => {
-    //   const createdStudents = await tx.student.createMany({
-    //     data: students,
-    //   });
-
-    //   return { insertedCount: createdStudents.count };
-    // });
   } catch (error) {
     console.error(error);
     if (error instanceof HttpError) {
@@ -146,7 +179,7 @@ router.post("/write-topsis", upload.single("file"), async (req, res) => {
         return {
           rank: item.ranking || -1,
           score: item.nilai_preferensi,
-        }
+        };
       });
       return writeResult;
     });
@@ -161,5 +194,26 @@ router.post("/write-topsis", upload.single("file"), async (req, res) => {
   }
 });
 
-export default router;
+router.get("/data", async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 10;
+    const sort = req.query.sortBy as string | undefined;
+    const students = await paginate(
+      (skip, take) =>
+        prisma.student.findMany({
+          skip,
+          take,
+          orderBy: sort ? { [sort]: "asc" } : undefined,
+        }),
+      () => prisma.student.count(),
+      { page, pageSize: pageSize },
+    );
+    sendData(res, students, "Data retrieved successfully");
+  } catch (error) {
+    console.error(error);
+    sendError(res, new HttpError("Failed to retrieve data", 500));
+  }
+});
 
+export default router;
