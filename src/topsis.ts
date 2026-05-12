@@ -83,6 +83,7 @@ type TopsisDataResult = {
 const router = Router();
 router.post("/upload", authMiddleware, upload.single("file"), async (req, res) => {
   try {
+    const wannaWrite = req.query.write === "true";
     if (!req.file) {
       sendError(res, new HttpError("No files uploaded", 400));
       return;
@@ -98,30 +99,35 @@ router.post("/upload", authMiddleware, upload.single("file"), async (req, res) =
         );
         criteria = [
           {
-            name: "ipk",
-            weight: 0.3,
-            type: "BENEFIT",
+            "name": "ipk",
+            "weight": 0.3,
+            "type": "BENEFIT"
           },
           {
-            name: "penghasilan_ortu",
-            weight: 0.2,
-            type: "COST",
+            "name": "penghasilan_ortu",
+            "weight": 0.2,
+            "type": "COST"
           },
           {
-            name: "jumlah_tanggungan",
-            weight: 0.1,
-            type: "COST",
+            "name": "jumlah_tanggungan",
+            "weight": 0.1,
+            "type": "COST"
           },
           {
-            name: "skor_prestasi",
-            weight: 0.2,
-            type: "BENEFIT",
+            "name": "skor_prestasi",
+            "weight": 0.1,
+            "type": "BENEFIT"
           },
           {
-            name: "keaktifan_organisasi",
-            weight: 0.2,
-            type: "BENEFIT",
+            "name": "keaktifan_organisasi",
+            "weight": 0.1,
+            "type": "BENEFIT"
           },
+          {
+            "name": "semester",
+            "weight": 0.2,
+            "type": "COST"
+          }
         ];
       } else {
         throw new HttpError("No criteria found in database, please configure criteria first", 500);
@@ -133,10 +139,55 @@ router.post("/upload", authMiddleware, upload.single("file"), async (req, res) =
       "/calculate",
       form,
     );
+    const calculateResultWriteData = calculateResult.data.map((item) => ({
+      rank: item.ranking || -1,
+      score: item.nilai_preferensi,
+      unique_name: item.unique_name,
+        }));
+    const studentData = calculateResult.data.map((item) => ({
+      unique_name: item.unique_name,
+      name: item.nama,
+      ipk: item.kriteria.ipk,
+      income: item.kriteria.penghasilan_ortu,
+      dependents: item.kriteria.jumlah_tanggungan,
+      achievement_score: Number(item.kriteria.skor_prestasi) || 0,
+      organization_score:
+        Number(item.kriteria.keaktifan_organisasi) || 0,
+      semester: item.kriteria.semester,
+    }));
+    console.log("semester: ",calculateResult.data.at(204)?.kriteria.semester);
+    
+    if (wannaWrite) {
+      const createdStudent = await handledPrisma.handleWrite(async ()=>
+        await prisma.student.createManyAndReturn({
+          data: studentData,
+          skipDuplicates: true,
+        })
+      )
+
+      for (const item of createdStudent){
+        const nameToConnect  = item.unique_name;
+        const resultToWrite = calculateResultWriteData.find((result) => result.unique_name === nameToConnect);
+        if (!resultToWrite) {
+          console.warn(`No result found for student with unique_name: ${nameToConnect}, skipping result creation`);
+          continue;
+        }
+        await prisma.results.create({
+          data: {
+            rank: resultToWrite.rank,
+            score: resultToWrite.score,
+            student: { connect: { unique_name: nameToConnect } },  
+          },
+          
+        });
+      }
+      
+  }
 
     sendData(
       res,
-      { count: calculateResult.data.length || 0 },
+      { created: calculateResult.data.length || 0 },
+      // {calculateResult: calculateResult.data},
     );
 
   } catch (error) {
