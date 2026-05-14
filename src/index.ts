@@ -1,6 +1,6 @@
 import express, { type Request, type Response } from "express";
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 import { prisma } from "./lib/prisma";
 import morgan from "morgan";
 import cors from "cors";
@@ -68,14 +68,22 @@ const handledPrisma = createPrismaUtils(prisma);
 app.post("/register", validateAuthRequest, async (req, res) => {
   // Handle POST request to /register
   try {
-    const { username, password } = req.body;
+    const { nama, username, password } = req.body;
+    const role = typeof req.body.role === "string" ? req.body.role : "User";
+
+    if (!nama || typeof nama !== "string") {
+      sendError(res, new HttpError("Nama is required and must be a string", 400));
+      return;
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await handledPrisma.handleWrite(() =>
       prisma.user.create({
         data: {
+          nama,
           username,
           password: hashedPassword,
+          role,
         },
       }),
     );
@@ -108,8 +116,8 @@ app.post("/login", validateAuthRequest, async (req, res) => {
       throw new HttpError("Invalid password", 401);
     }
 
-    const refreshToken = generateRefreshToken({ userId: user.id });
-    const accessToken = generateToken({ userId: user.id }, "15m");
+    const refreshToken = generateRefreshToken({ userId: user.id_user });
+    const accessToken = generateToken({ userId: user.id_user }, "15m");
 
     res
       .status(200)
