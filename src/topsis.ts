@@ -39,6 +39,7 @@ type TopsisProcessorResponseRaw = {
 
 type TopsisDataResult = {
   nama: string;
+  kode_alternatif?: string;
   provinsi?: string | null;
   nilai_preferensi: number;
   jarak_ideal_positif: number;
@@ -132,9 +133,10 @@ const getPriorityCategories = (data: TopsisDataResult[]) => {
   return new Map(
     sorted.map((item, index) => {
       const ratio = sorted.length === 0 ? 0 : index / sorted.length;
-      const kategori = ratio < 0.3 ? "Tinggi" : ratio < 0.7 ? "Sedang" : "Rendah";
+      const kategori =
+        ratio < 0.3 ? "Tinggi" : ratio < 0.7 ? "Sedang" : "Rendah";
       //todo ganti item.nama dengan kode_alternatif yang harus ada di tiap request (mungkin gunakan middleware untuk validasi dan bikin jika tidak ada di body)
-      return [item.nama, kategori]; 
+      return [item.kode_alternatif || item.nama, kategori];
     }),
   );
 };
@@ -142,10 +144,7 @@ const getPriorityCategories = (data: TopsisDataResult[]) => {
 const parseCriterionValue = (criterionName: string, value: unknown) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
-    throw new HttpError(
-      `Invalid value for criterion '${criterionName}'`,
-      400,
-    );
+    throw new HttpError(`Invalid value for criterion '${criterionName}'`, 400);
   }
 
   return parsed;
@@ -164,6 +163,7 @@ const persistTopsisResults = async (
   const categories = getPriorityCategories(data);
 
   return prisma.$transaction(async (tx) => {
+    // 1. Handle criteria - batch operation
     const existingCriteria = await tx.kriteria.findMany({
       select: {
         id_kriteria: true,
@@ -172,52 +172,93 @@ const persistTopsisResults = async (
       },
     });
     const criteriaByName = new Map(
-      existingCriteria.map((criterion) => [
-        criterion.nama_kriteria,
-        criterion,
-      ]),
+      existingCriteria.map((criterion) => [criterion.nama_kriteria, criterion]),
     );
     let nextCriterionCode = getMaxCriterionCode(existingCriteria) + 1;
 
-    for (const criterion of criteria) {
-      if (criteriaByName.has(criterion.name)) {
-        continue;
-      }
-
-      const created = await tx.kriteria.create({
-        data: {
-          kode_kriteria: `C${nextCriterionCode++}`,
-          nama_kriteria: criterion.name,
-          bobot: criterion.weight,
-          jenis: criterion.type,
-        },
-        select: {
-          id_kriteria: true,
-          kode_kriteria: true,
-          nama_kriteria: true,
-        },
+    // Create missing criteria in batch
+    const newCriteria = criteria.filter((c) => !criteriaByName.has(c.name));
+    if (newCriteria.length > 0) {
+      await tx.kriteria.createMany({
+        data: newCriteria.map((c, idx) => ({
+          kode_kriteria: `C${nextCriterionCode + idx}`,
+          nama_kriteria: c.name,
+          bobot: c.weight,
+          jenis: c.type,
+        })),
       });
-      criteriaByName.set(created.nama_kriteria, created);
     }
 
-    for (const [index, item] of data.entries()) {
-      const alternatif = await tx.alternatif.upsert({
-        where: { kode_alternatif: item.nama },
-        create: {
-          kode_alternatif: item.nama,
-          nama_alternatif: item.nama,
-          provinsi: item.provinsi ?? null,
-        },
-        update: {
-          nama_alternatif: item.nama,
-          provinsi: item.provinsi ?? null,
-        },
+    // Refresh criteria map with all criteria
+    const allCriteria = await tx.kriteria.findMany({
+      select: {
+        id_kriteria: true,
+        kode_kriteria: true,
+        nama_kriteria: true,
+      },
+    });
+    const criteriaMap = new Map(
+      allCriteria.map((criterion) => [criterion.nama_kriteria, criterion]),
+    );
+
+    // 2. Batch upsert alternatif - 1 query
+    const alternatifCodes = data.map((item) => item.nama);
+    const existingAlternatif = await tx.alternatif.findMany({
+      where: { kode_alternatif: { in: alternatifCodes } },
+      select: { id_alternatif: true, kode_alternatif: true },
+    });
+    const existingAlternatifMap = new Map(
+      existingAlternatif.map((a) => [a.kode_alternatif, a.id_alternatif]),
+    );
+
+    // Create new alternatif
+    const newAlternatifData = data
+      .filter((item) => !existingAlternatifMap.has(item.nama))
+      .map((item) => ({
+        kode_alternatif: item.nama,
+        nama_alternatif: item.nama,
+        provinsi: item.provinsi ?? null,
+      }));
+
+    if (newAlternatifData.length > 0) {
+      await tx.alternatif.createMany({
+        data: newAlternatifData,
       });
+    }
+
+    // Get updated alternatif map
+    const allAlternatif = await tx.alternatif.findMany({
+      where: { kode_alternatif: { in: alternatifCodes } },
+      select: { id_alternatif: true, kode_alternatif: true },
+    });
+    const alternatifMap = new Map(
+      allAlternatif.map((a) => [a.kode_alternatif, a.id_alternatif]),
+    );
+
+    // Update existing alternatif (if needed)
+    for (const item of data) {
+      const alternatifId = alternatifMap.get(item.nama);
+      if (alternatifId && existingAlternatifMap.has(item.nama)) {
+        await tx.alternatif.update({
+          where: { id_alternatif: alternatifId },
+          data: {
+            nama_alternatif: item.nama,
+            provinsi: item.provinsi ?? null,
+          },
+        });
+      }
+    }
+
+    // 3. Batch upsert nilai_alternatif - 1 query
+    const nilaiAlternatifData = [];
+    for (const item of data) {
+      const alternatifId = alternatifMap.get(item.nama);
+      if (!alternatifId) continue;
 
       for (const [criterionName, criterionValue] of Object.entries(
         item.kriteria,
       )) {
-        const criterion = criteriaByName.get(criterionName);
+        const criterion = criteriaMap.get(criterionName);
         if (!criterion) {
           throw new HttpError(
             `Criterion '${criterionName}' is not configured`,
@@ -225,41 +266,50 @@ const persistTopsisResults = async (
           );
         }
 
-        await tx.nilaiAlternatif.upsert({
-          where: {
-            id_alternatif_id_kriteria: {
-              id_alternatif: alternatif.id_alternatif,
-              id_kriteria: criterion.id_kriteria,
-            },
-          },
-          create: {
-            id_alternatif: alternatif.id_alternatif,
-            id_kriteria: criterion.id_kriteria,
-            nilai: parseCriterionValue(criterionName, criterionValue),
-          },
-          update: {
-            nilai: parseCriterionValue(criterionName, criterionValue),
-          },
+        nilaiAlternatifData.push({
+          id_alternatif: alternatifId,
+          id_kriteria: criterion.id_kriteria,
+          nilai: parseCriterionValue(criterionName, criterionValue),
         });
       }
+    }
 
-      await tx.hasilTopsis.upsert({
-        where: { id_alternatif: alternatif.id_alternatif },
-        create: {
-          id_alternatif: alternatif.id_alternatif,
-          d_plus: item.jarak_ideal_positif,
-          d_minus: item.jarak_ideal_negatif,
-          nilai_preferensi: item.nilai_preferensi,
-          ranking: item.ranking ?? index + 1,
-          kategori: categories.get(item.nama) ?? "Rendah",
-        },
-        update: {
-          d_plus: item.jarak_ideal_positif,
-          d_minus: item.jarak_ideal_negatif,
-          nilai_preferensi: item.nilai_preferensi,
-          ranking: item.ranking ?? index + 1,
-          kategori: categories.get(item.nama) ?? "Rendah",
-        },
+    // Delete old nilai_alternatif for these alternatif and insert new ones
+    const alternatifIds = Array.from(alternatifMap.values());
+    if (alternatifIds.length > 0 && nilaiAlternatifData.length > 0) {
+      await tx.nilaiAlternatif.deleteMany({
+        where: { id_alternatif: { in: alternatifIds } },
+      });
+      await tx.nilaiAlternatif.createMany({
+        data: nilaiAlternatifData,
+      });
+    }
+
+    // 4. Batch upsert hasil_topsis - 1 query
+    const hasilTopsisData = data.map((item, index) => {
+      const alternatifId = alternatifMap.get(item.nama);
+      if (!alternatifId) {
+        throw new HttpError(`Alternatif '${item.nama}' not found`, 500);
+      }
+      return {
+        id_alternatif: alternatifId,
+        d_plus: item.jarak_ideal_positif,
+        d_minus: item.jarak_ideal_negatif,
+        nilai_preferensi: item.nilai_preferensi,
+        ranking: item.ranking ?? index + 1,
+        kategori: categories.get(item.kode_alternatif || item.nama) ?? "Rendah",
+      };
+    });
+
+    // Delete old hasil_topsis and insert new ones
+    if (alternatifIds.length > 0) {
+      await tx.hasilTopsis.deleteMany({
+        where: { id_alternatif: { in: alternatifIds } },
+      });
+    }
+    if (hasilTopsisData.length > 0) {
+      await tx.hasilTopsis.createMany({
+        data: hasilTopsisData,
       });
     }
 
@@ -268,78 +318,50 @@ const persistTopsisResults = async (
 };
 
 const router = Router();
-router.post("/upload", authMiddleware, upload.single("file"), async (req, res) => {
-  try {
-    const wannaWrite = req.query.write === "true";
-    if (!req.file) {
-      sendError(res, new HttpError("No files uploaded", 400));
-      return;
-    }
+router.post(
+  "/upload",
+  authMiddleware,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const wannaWrite = req.query.write === "true";
+      if (!req.file) {
+        sendError(res, new HttpError("No files uploaded", 400));
+        return;
+      }
 
-    const file = req.file;
-    const form = new FormData();
-    const criteria = await getCriteriaForProcessing();
+      const file = req.file;
+      const form = new FormData();
+      const criteria = await getCriteriaForProcessing();
 
-    form.append("criterionBody", JSON.stringify(criteria));
-    form.append("file", new Blob([new Uint8Array(file.buffer)]), file.originalname);
-    const calculateResult: TopsisProcessorResponseRaw = await apiPost(
-      "/calculate",
-      form,
-    );
-
-    if (wannaWrite) {
-      await handledPrisma.handleWrite(() =>
-        persistTopsisResults(calculateResult.data, criteria),
+      form.append("criterionBody", JSON.stringify(criteria));
+      form.append(
+        "file",
+        new Blob([new Uint8Array(file.buffer)]),
+        file.originalname,
       );
-    }
+      const calculateResult: TopsisProcessorResponseRaw = await apiPost(
+        "/calculate",
+        form,
+      );
 
-    sendData(res, { created: calculateResult.data.length || 0 });
-  } catch (error) {
-    console.error(error);
-    if (error instanceof HttpError) {
-      sendError(res, error, error.status, error.message);
-      return;
-    }
-    sendError(res, error);
-  }
-});
+      if (wannaWrite) {
+        await handledPrisma.handleWrite(() =>
+          persistTopsisResults(calculateResult.data, criteria),
+        );
+      }
 
-/**
- * endpoint untuk menerima file json hasil kalkulasi topsis dari processor,
- * lalu menyimpan data ke database
- * mungkin bisa dibuat endpoint POST /write-topsis yang menerima file json,
- * kemudian membaca data dari file tersebut,
- * lalu menyimpan data ke database menggunakan prisma
- */
-router.post("/write-topsis", upload.single("file"), async (req, res) => {
-  try {
-    if (!req.file) {
-      sendError(res, new HttpError("No files uploaded", 400));
-      return;
+      sendData(res, { created: calculateResult.data.length || 0 });
+    } catch (error) {
+      console.error(error);
+      if (error instanceof HttpError) {
+        sendError(res, error, error.status, error.message);
+        return;
+      }
+      sendError(res, error);
     }
-
-    const file = req.file;
-    const fileContent = file.buffer.toString("utf-8");
-    const data: TopsisDataResult[] = JSON.parse(fileContent);
-    const criteria = await getCriteriaForProcessing();
-    const insertedCount = await handledPrisma.handleWrite(() =>
-      persistTopsisResults(data, criteria),
-    );
-
-    sendData(
-      res,
-      { insertedCount },
-      "Successfully written topsis results to database",
-    );
-  } catch (error) {
-    console.error(error);
-    if (error instanceof HttpError) {
-      sendError(res, error, error.status, error.message);
-      return;
-    }
-    sendError(res, new HttpError("Unknown error occurred", 500));
-  }
-});
+  },
+);
 
 router.get("/data", async (req, res) => {
   try {
@@ -375,3 +397,4 @@ router.get("/data", async (req, res) => {
 });
 
 export default router;
+

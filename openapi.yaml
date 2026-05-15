@@ -1,0 +1,1832 @@
+openapi: 3.0.0
+info:
+  title: SPK
+  version: 1.0.0
+  description: ini untuk spk
+servers:
+  - url: '{{BASE_URL}}'
+  - url: '{{PROCESSOR_URL}}'
+paths:
+  /register:
+    post:
+      summary: register
+      responses:
+        '200':
+          description: '200'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 28
+            ETag:
+              schema:
+                type: string
+              example: W/"1c-87CmT96XRfMUd4Xz7iVy7wA+Vl0"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:04:26 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+        '400':
+          description: '400'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 71
+            ETag:
+              schema:
+                type: string
+              example: W/"47-AxbBiD9nw2yUPfnQY+eLIaH5Uzo"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:15:08 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+      tags:
+        - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+            example: |-
+              {
+                  "nama": "rafi",
+                  // "role":"User", // opsional
+                  "username": "username",
+                  "password": "password"
+              }
+  /login:
+    post:
+      summary: login
+      responses:
+        '200':
+          description: '200'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Set-Cookie:
+              schema:
+                type: string
+              example: >-
+                access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImlhdCI6MTc3ODc4NjA4MywiZXhwIjoxNzc4Nzg2OTgzfQ.IcYKjrvnaH1wFq1jYKH7tFT7vd5RlLanYJ_a3I1ZnOY;
+                Max-Age=900; Path=/; Expires=Thu, 14 May 2026 19:29:43 GMT;
+                HttpOnly; SameSite=Lax
+            Content-Length:
+              schema:
+                type: integer
+              example: 191
+            ETag:
+              schema:
+                type: string
+              example: W/"bf-DWjL1nujiYrwXHNGs+Wzlb3h/LY"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:14:43 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+        '400':
+          description: '400'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 72
+            ETag:
+              schema:
+                type: string
+              example: W/"48-foe7IEVlwZtXi7MWk6cAGyIexo4"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:16:13 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+      tags:
+        - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+            example:
+              username: username
+              password: password
+  /calculate:
+    post:
+      summary: calculate
+      responses:
+        '200':
+          description: '200'
+          headers:
+            date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:21:11 GMT
+            server:
+              schema:
+                type: string
+              example: uvicorn
+            content-length:
+              schema:
+                type: integer
+              example: 43969
+        '422':
+          description: 422 (file not uploaded)
+          headers:
+            date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:52:28 GMT
+            server:
+              schema:
+                type: string
+              example: uvicorn
+            content-length:
+              schema:
+                type: integer
+              example: 89
+      tags:
+        - Processor
+      description: |-
+        Untuk request antar service, gak usah terlalu dipedulikan.
+
+        body ini contoh saja
+  /upload:
+    post:
+      summary: upload
+      parameters:
+        - name: write
+          in: query
+          schema:
+            type: boolean
+          example: true
+      responses:
+        '200':
+          description: '200'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 36
+            ETag:
+              schema:
+                type: string
+              example: W/"24-0Kwf0r3R04ob+DiSKhz+NUykBgM"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 20:01:54 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+        '500':
+          description: '500'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Set-Cookie:
+              schema:
+                type: string
+              example: >-
+                refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImlhdCI6MTc3ODc4OTE0MiwiZXhwIjoxNzc5MzkzOTQyfQ.2z8BkufrjGY4p1R394hUK9t0wO0gpj6bF2LRqhC2v8k;
+                Max-Age=604800; Path=/; Expires=Thu, 21 May 2026 20:05:42 GMT;
+                HttpOnly; SameSite=Lax
+            Content-Length:
+              schema:
+                type: integer
+              example: 88
+            ETag:
+              schema:
+                type: string
+              example: W/"58-nIKI0aqqTYwrXOiNyswh5Qeb/us"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 20:06:05 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+      tags:
+        - 'TOPSIS data '
+      description: param nya kalo gak pake write=true berarti dia gak nulis ke database
+  /criteria/bulk:
+    post:
+      summary: criteria bulk
+      responses:
+        '200':
+          description: '200'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 44
+            ETag:
+              schema:
+                type: string
+              example: W/"2c-ml+GcHRkrdOT4M9jrfVedL4t1Tc"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:45:34 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+        '400':
+          description: '400'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 71
+            ETag:
+              schema:
+                type: string
+              example: W/"47-AxbBiD9nw2yUPfnQY+eLIaH5Uzo"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:22:43 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+      tags:
+        - 'TOPSIS data '
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  weight:
+                    type: number
+                  type:
+                    type: string
+            example:
+              - name: ipk
+                weight: 0.3
+                type: benefit
+              - name: penghasilan_ortu
+                weight: 0.2
+                type: cost
+              - name: jumlah_tanggungan
+                weight: 0.1
+                type: cost
+              - name: skor_prestasi
+                weight: 0.2
+                type: benefit
+              - name: keaktifan_organisasi
+                weight: 0.2
+                type: benefit
+    patch:
+      summary: patch criteria bulk
+      responses:
+        '404':
+          description: '404'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 74
+            ETag:
+              schema:
+                type: string
+              example: W/"4a-g1iFWXPrLTPqRO11sUY/PuYKZDU"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:47:46 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+      tags:
+        - 'TOPSIS data '
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  weight:
+                    type: number
+                  type:
+                    type: string
+            example:
+              - name: ipk
+                weight: 0.3
+                type: BENEFIT
+              - name: penghasilan_ortu
+                weight: 0.2
+                type: COST
+              - name: jumlah_tanggungan
+                weight: 0.1
+                type: COST
+              - name: skor_prestasi
+                weight: 0.1
+                type: BENEFIT
+              - name: keaktifan_organisasi
+                weight: 0.1
+                type: BENEFIT
+              - name: semester
+                weight: 0.2
+                type: COST
+    delete:
+      summary: delete criteria bulk
+      responses:
+        '200':
+          description: '200'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 42
+            ETag:
+              schema:
+                type: string
+              example: W/"2a-MwGbTgZBKFtANb91E+VNlyojU+4"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:46:01 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+        '404':
+          description: '404'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 144
+            ETag:
+              schema:
+                type: string
+              example: W/"90-o0PX/hmV0qQCzkaYFFScDH7wHBg"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:52:00 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+      tags:
+        - 'TOPSIS data '
+      description: >-
+        ## Delete Criteria Bulk
+
+
+        Deletes multiple criteria at once by their names. This is useful for
+        removing several criteria in a single request instead of deleting them
+        one by one.
+
+
+        ---
+
+
+        ### Method & URL
+
+
+        ```
+
+        DELETE {{BASE_URL}}/criteria/bulk
+
+        ```
+
+
+        ---
+
+
+        ### Request Body
+
+
+        **Content-Type:** `application/json`
+
+
+        | Field   | Type            | Required |
+        Description                                      |
+
+        |---------|-----------------|----------|--------------------------------------------------|
+
+        | `names` | `array<string>` | ✅ Yes   | A list of criteria names to be
+        deleted.          |
+
+
+        **Example:**
+
+
+        ```json
+
+        {
+            "names": [
+                "ipk",
+                "semester",
+                "penghasilan_ortu",
+                "jumlah_tanggungan",
+                "keaktifan_organisasi",
+                "skor_prestasi"
+            ]
+        }
+
+        ```
+
+
+        ---
+
+
+        ### Responses
+
+
+        #### ✅ 200 — Success
+
+
+        All specified criteria were found and successfully deleted.
+
+
+        ---
+
+
+        #### ❌ 404 — Not Found
+
+
+        None of the specified criteria were deleted. This typically means none
+        of the provided names exist in the database.
+
+
+        ```json
+
+        {
+            "message": "No criteria were deleted. Please check the names and try again. (maybe they don't exist)",
+            "error": {
+                "name": "HttpError",
+                "status": 404
+            }
+        }
+
+        ```
+
+
+        ---
+
+
+        ### Notes
+
+
+        - The `names` array must contain at least one entry.
+
+        - If **none** of the provided names match existing criteria, a `404`
+        response is returned.
+
+        - Criteria names are case-sensitive — make sure the names match exactly
+        as stored in the database.
+
+        - This endpoint performs a bulk operation; partial deletions (where only
+        some names match) may or may not be supported depending on the server
+        implementation — verify behavior with the backend if needed.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                names:
+                  type: array
+                  items:
+                    type: string
+            example:
+              names:
+                - ipk
+                - semester
+                - penghasilan_ortu
+                - jumlah_tanggungan
+                - keaktifan_organisasi
+                - skor_prestasi
+  /criteria:
+    post:
+      summary: criteria
+      responses:
+        '200':
+          description: '200'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 139
+            ETag:
+              schema:
+                type: string
+              example: W/"8b-tszRe/wo9xrVoRdRLKzkjfecRgE"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:48:07 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+        '400':
+          description: '400'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 71
+            ETag:
+              schema:
+                type: string
+              example: W/"47-AxbBiD9nw2yUPfnQY+eLIaH5Uzo"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:48:17 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+      tags:
+        - 'TOPSIS data '
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                weight:
+                  type: number
+                type:
+                  type: string
+            example:
+              name: semester
+              weight: 0.2
+              type: COST
+    patch:
+      summary: patch criteria
+      responses:
+        '200':
+          description: '200'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 137
+            ETag:
+              schema:
+                type: string
+              example: W/"89-T08EpWtxkt6KXN6gO2DmbkKKOPA"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:54:06 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+        '404':
+          description: '404'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 74
+            ETag:
+              schema:
+                type: string
+              example: W/"4a-g1iFWXPrLTPqRO11sUY/PuYKZDU"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:47:57 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+      tags:
+        - 'TOPSIS data '
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                weight:
+                  type: number
+                type:
+                  type: string
+            example:
+              name: semester
+              weight: 0.2
+              type: COST
+    delete:
+      summary: delete criteria
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+          example: semester
+      responses:
+        '200':
+          description: '200'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 31
+            ETag:
+              schema:
+                type: string
+              example: W/"1f-avu32iQ3PEBfVLp4rVLpkg1jTJE"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:25:22 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+        '404':
+          description: '404'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 74
+            ETag:
+              schema:
+                type: string
+              example: W/"4a-g1iFWXPrLTPqRO11sUY/PuYKZDU"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 19:25:05 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+      tags:
+        - 'TOPSIS data '
+  /data:
+    get:
+      summary: get data
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+          example: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+          example: 10
+      responses:
+        '200':
+          description: '200'
+          headers:
+            Content-Security-Policy:
+              schema:
+                type: string
+              example: >-
+                default-src 'self';base-uri 'self';font-src 'self' https:
+                data:;form-action 'self';frame-ancestors 'self';img-src 'self'
+                data:;object-src 'none';script-src 'self';script-src-attr
+                'none';style-src 'self' https:
+                'unsafe-inline';upgrade-insecure-requests
+            Cross-Origin-Opener-Policy:
+              schema:
+                type: string
+              example: same-origin
+            Origin-Agent-Cluster:
+              schema:
+                type: string
+              example: '?1'
+            Referrer-Policy:
+              schema:
+                type: string
+              example: no-referrer
+            Strict-Transport-Security:
+              schema:
+                type: string
+              example: max-age=31536000; includeSubDomains
+            X-Content-Type-Options:
+              schema:
+                type: string
+              example: nosniff
+            X-DNS-Prefetch-Control:
+              schema:
+                type: string
+              example: 'off'
+            X-Download-Options:
+              schema:
+                type: string
+              example: noopen
+            X-Frame-Options:
+              schema:
+                type: string
+              example: SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+              schema:
+                type: string
+              example: none
+            X-XSS-Protection:
+              schema:
+                type: integer
+              example: 0
+            Vary:
+              schema:
+                type: string
+              example: Origin
+            Access-Control-Allow-Credentials:
+              schema:
+                type: boolean
+              example: true
+            Content-Length:
+              schema:
+                type: integer
+              example: 14021
+            ETag:
+              schema:
+                type: string
+              example: W/"36c5-/d4wcJO6qN9NICDwScIH3r0F4cA"
+            Date:
+              schema:
+                type: string
+              example: Thu, 14 May 2026 20:19:33 GMT
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+            Keep-Alive:
+              schema:
+                type: string
+              example: timeout=5
+      tags:
+        - 'TOPSIS data '

@@ -141,7 +141,7 @@ router.patch("/criteria", authMiddleware, async (req, res) => {
 
 router.patch("/criteria/bulk", authMiddleware, async (req, res) => {
   try {
-    const criteria = req.body;
+    const criteria = req.body as any[];
     if (!Array.isArray(criteria)) {
       throw new HttpError("Criteria must be an array", 400);
     }
@@ -183,12 +183,60 @@ router.delete("/criteria", authMiddleware, async (req, res) => {
     if (!name) {
       throw new HttpError("Criterion name is required", 400);
     }
-    const write = await handledPrisma.handleWrite(() =>
+    await handledPrisma.handleWrite(() =>
       prisma.kriteria.delete({
         where: { nama_kriteria: name },
       }),
     );
-    sendData(res, { deleted: write }, "deleted criterion");
+    sendData(res, undefined, "deleted criterion");
+  } catch (error) {
+    console.error(error);
+    sendError(res, error);
+  }
+});
+
+router.delete("/criteria/bulk", authMiddleware, async (req, res) => {
+  try {
+    const names = req.body.names as any[];
+    if (!Array.isArray(names) || names.some((name) => typeof name !== "string")) {
+      throw new HttpError("Names must be an array of strings", 400);
+    }
+
+    const deletePromises = await Promise.all(
+      names.map(
+        async (name) =>
+          await prisma.$transaction(async (tx) => {
+            const find = await tx.kriteria.findUnique({
+              where: { nama_kriteria: name },
+            });
+            if (!find) {
+              return null;
+            }
+            const deleted = await tx.kriteria.delete({
+              where: { nama_kriteria: name },
+            });
+
+            return deleted;
+          }),
+      ),
+    );
+
+    if (deletePromises.every((result) => result === null)) {
+      throw new HttpError("No criteria were deleted. Please check the names and try again. (maybe they don't exist)", 404);
+    }
+
+    
+    
+    sendData(
+      res,
+      {
+        deleted: deletePromises
+        // .filter((v): v is NonNullable<typeof v> => !!v)
+        .filter((v): v is Exclude<typeof v, null> => v !== null)
+          .length,
+      },
+      "deleted criteria",
+    );
   } catch (error) {
     console.error(error);
     sendError(res, error);
@@ -196,3 +244,7 @@ router.delete("/criteria", authMiddleware, async (req, res) => {
 });
 
 export default router;
+
+
+
+

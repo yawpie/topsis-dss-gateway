@@ -103,17 +103,15 @@ app.post("/login", validateAuthRequest, async (req, res) => {
   const { username, password } = req.body;
   // const hashedPassword = await bcrypt.hash(password, 10);
   try {
-    const user = await handledPrisma.handleNotFound(() =>
-      prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
         where: { username },
-      }),
-    );
+      });
     if (!user) {
-      throw new HttpError("Invalid username or password", 401);
+      throw new HttpError("Invalid username or password", 400);
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new HttpError("Invalid password", 401);
+      throw new HttpError("Invalid password", 400);
     }
 
     const refreshToken = generateRefreshToken({ userId: user.id_user });
