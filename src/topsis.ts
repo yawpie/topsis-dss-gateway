@@ -40,7 +40,7 @@ type TopsisProcessorResponseRaw = {
 type TopsisDataResult = {
   nama: string;
   kode_alternatif?: string;
-  provinsi?: string | null;
+  metadata?: string | null;
   nilai_preferensi: number;
   jarak_ideal_positif: number;
   jarak_ideal_negatif: number;
@@ -162,6 +162,18 @@ const persistTopsisResults = async (
 ) => {
   const categories = getPriorityCategories(data);
 
+  /** Resolve the unique identifier for an item (prefers kode_alternatif, falls back to nama). */
+  const resolveCode = (item: TopsisDataResult): string => {
+    const code = item.kode_alternatif || item.nama;
+    if (!code) {
+      throw new HttpError(
+        "Item harus memiliki 'kode_alternatif' atau 'nama' sebagai identifier",
+        400,
+      );
+    }
+    return code;
+  };
+
   return prisma.$transaction(async (tx) => {
     // 1. Handle criteria - batch operation
     const existingCriteria = await tx.kriteria.findMany({
@@ -202,7 +214,7 @@ const persistTopsisResults = async (
     );
 
     // 2. Batch upsert alternatif - 1 query
-    const alternatifCodes = data.map((item) => item.nama);
+    const alternatifCodes = data.map(resolveCode);
     const existingAlternatif = await tx.alternatif.findMany({
       where: { kode_alternatif: { in: alternatifCodes } },
       select: { id_alternatif: true, kode_alternatif: true },
@@ -213,12 +225,15 @@ const persistTopsisResults = async (
 
     // Create new alternatif
     const newAlternatifData = data
-      .filter((item) => !existingAlternatifMap.has(item.nama))
-      .map((item) => ({
-        kode_alternatif: item.nama,
-        nama_alternatif: item.nama,
-        provinsi: item.provinsi ?? null,
-      }));
+      .filter((item) => !existingAlternatifMap.has(resolveCode(item)))
+      .map((item) => {
+        const code = resolveCode(item);
+        return {
+          kode_alternatif: code,
+          nama_alternatif: item.nama || code,
+          metadata: item.metadata ?? null,
+        };
+      });
 
     if (newAlternatifData.length > 0) {
       await tx.alternatif.createMany({
@@ -237,13 +252,14 @@ const persistTopsisResults = async (
 
     // Update existing alternatif (if needed)
     for (const item of data) {
-      const alternatifId = alternatifMap.get(item.nama);
-      if (alternatifId && existingAlternatifMap.has(item.nama)) {
+      const code = resolveCode(item);
+      const alternatifId = alternatifMap.get(code);
+      if (alternatifId && existingAlternatifMap.has(code)) {
         await tx.alternatif.update({
           where: { id_alternatif: alternatifId },
           data: {
-            nama_alternatif: item.nama,
-            provinsi: item.provinsi ?? null,
+            nama_alternatif: item.nama || code,
+            metadata: item.metadata ?? null,
           },
         });
       }
@@ -252,7 +268,8 @@ const persistTopsisResults = async (
     // 3. Batch upsert nilai_alternatif - 1 query
     const nilaiAlternatifData = [];
     for (const item of data) {
-      const alternatifId = alternatifMap.get(item.nama);
+      const code = resolveCode(item);
+      const alternatifId = alternatifMap.get(code);
       if (!alternatifId) continue;
 
       for (const [criterionName, criterionValue] of Object.entries(
@@ -287,9 +304,10 @@ const persistTopsisResults = async (
 
     // 4. Batch upsert hasil_topsis - 1 query
     const hasilTopsisData = data.map((item, index) => {
-      const alternatifId = alternatifMap.get(item.nama);
+      const code = resolveCode(item);
+      const alternatifId = alternatifMap.get(code);
       if (!alternatifId) {
-        throw new HttpError(`Alternatif '${item.nama}' not found`, 500);
+        throw new HttpError(`Alternatif '${code}' not found`, 500);
       }
       return {
         id_alternatif: alternatifId,
@@ -297,7 +315,7 @@ const persistTopsisResults = async (
         d_minus: item.jarak_ideal_negatif,
         nilai_preferensi: item.nilai_preferensi,
         ranking: item.ranking ?? index + 1,
-        kategori: categories.get(item.kode_alternatif || item.nama) ?? "Rendah",
+        kategori: categories.get(code) ?? "Rendah",
       };
     });
 
@@ -349,9 +367,10 @@ router.post(
         await handledPrisma.handleWrite(() =>
           persistTopsisResults(calculateResult.data, criteria),
         );
+        sendData(res, { created: calculateResult.data.length || 0 });
+      } else {
+        sendData(res, { data: calculateResult.data });
       }
-
-      sendData(res, { created: calculateResult.data.length || 0 });
     } catch (error) {
       console.error(error);
       if (error instanceof HttpError) {
@@ -363,33 +382,286 @@ router.post(
   },
 );
 
+/**
+ * POST /item
+ * Menambahkan satu item alternatif beserta nilai kriterianya ke database.
+ *
+ * Body:
+ * {
+ *   "nama": string,
+ *   "kode_alternatif"?: string,
+ *   "metadata"?: string,
+ *   "kriteria": { [nama_kriteria]: number }
+ * }
+ */
+router.post("/item", authMiddleware, async (req, res) => {
+  try {
+    const { nama, kode_alternatif, metadata, kriteria } = req.body;
+
+    if (!nama || typeof nama !== "string") {
+      sendError(res, new HttpError("Field 'nama' wajib diisi", 400));
+      return;
+    }
+
+    if (!kriteria || typeof kriteria !== "object" || Array.isArray(kriteria)) {
+      sendError(
+        res,
+        new HttpError(
+          "Field 'kriteria' wajib berupa object { nama_kriteria: nilai }",
+          400,
+        ),
+      );
+      return;
+    }
+
+    // Validate that all criteria values are numeric
+    for (const [key, value] of Object.entries(kriteria)) {
+      parseCriterionValue(key, value);
+    }
+
+    const kode = kode_alternatif || nama;
+
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Upsert alternatif
+      const alternatif = await tx.alternatif.upsert({
+        where: { kode_alternatif: kode },
+        update: {
+          nama_alternatif: nama,
+          metadata: metadata ?? null,
+        },
+        create: {
+          kode_alternatif: kode,
+          nama_alternatif: nama,
+          metadata: metadata ?? null,
+        },
+      });
+
+      // 2. Ensure all criteria exist in DB
+      const existingCriteria = await tx.kriteria.findMany({
+        select: {
+          id_kriteria: true,
+          kode_kriteria: true,
+          nama_kriteria: true,
+        },
+      });
+      const criteriaByName = new Map(
+        existingCriteria.map((c) => [c.nama_kriteria, c]),
+      );
+      let nextCode = getMaxCriterionCode(existingCriteria) + 1;
+
+      const criteriaNames = Object.keys(kriteria);
+      const newCriteriaNames = criteriaNames.filter(
+        (name) => !criteriaByName.has(name),
+      );
+
+      if (newCriteriaNames.length > 0) {
+        // Look up default criteria config for weight/type when creating new criteria
+        const criteriaConfig = await getCriteriaForProcessing();
+        const configMap = new Map(
+          criteriaConfig.map((c) => [c.name, c]),
+        );
+
+        await tx.kriteria.createMany({
+          data: newCriteriaNames.map((name, idx) => {
+            const config = configMap.get(name);
+            return {
+              kode_kriteria: `C${nextCode + idx}`,
+              nama_kriteria: name,
+              bobot: config?.weight ?? 0,
+              jenis: config?.type ?? "BENEFIT",
+            };
+          }),
+        });
+      }
+
+      // Refresh criteria map
+      const allCriteria = await tx.kriteria.findMany({
+        select: {
+          id_kriteria: true,
+          nama_kriteria: true,
+        },
+      });
+      const criteriaMap = new Map(
+        allCriteria.map((c) => [c.nama_kriteria, c]),
+      );
+
+      // 3. Upsert nilai_alternatif for each criterion
+      const nilaiData = [];
+      for (const [criterionName, value] of Object.entries(kriteria)) {
+        const criterion = criteriaMap.get(criterionName);
+        if (!criterion) {
+          throw new HttpError(
+            `Criterion '${criterionName}' is not configured`,
+            400,
+          );
+        }
+        nilaiData.push({
+          id_alternatif: alternatif.id_alternatif,
+          id_kriteria: criterion.id_kriteria,
+          nilai: parseCriterionValue(criterionName, value),
+        });
+      }
+
+      // Delete old values and insert new ones
+      await tx.nilaiAlternatif.deleteMany({
+        where: { id_alternatif: alternatif.id_alternatif },
+      });
+      if (nilaiData.length > 0) {
+        await tx.nilaiAlternatif.createMany({ data: nilaiData });
+      }
+
+      return alternatif;
+    });
+
+    sendData(res, { data: result }, "Item berhasil ditambahkan", 201);
+  } catch (error) {
+    console.error(error);
+    if (error instanceof HttpError) {
+      sendError(res, error, error.status, error.message);
+      return;
+    }
+    sendError(res, error);
+  }
+});
+
+/**
+ * POST /calculate
+ * Mengambil semua alternatif dari database, mengirimkannya ke topsis-processor
+ * untuk dihitung, lalu menyimpan hasilnya ke database.
+ *
+ * Query:
+ *   write=true  -> simpan hasil ke database (default: true)
+ *   write=false -> hanya return hasil perhitungan tanpa menyimpan
+ */
+router.post("/calculate", authMiddleware, async (req, res) => {
+  try {
+    const wannaWrite = req.query.write !== "false";
+
+    // 1. Ambil semua alternatif beserta nilai kriterianya dari database
+    const alternatives = await prisma.alternatif.findMany({
+      include: {
+        nilai_alternatif: {
+          include: {
+            kriteria: true,
+          },
+        },
+      },
+    });
+
+    if (alternatives.length === 0) {
+      sendError(
+        res,
+        new HttpError(
+          "Tidak ada data alternatif di database. Tambahkan item terlebih dahulu.",
+          400,
+        ),
+      );
+      return;
+    }
+
+    // 2. Ambil konfigurasi kriteria
+    const criteria = await getCriteriaForProcessing();
+
+    // 3. Transform data ke format yang diharapkan oleh topsis-processor
+    const alternativesPayload = alternatives.map((alt) => {
+      const kriteriaValues: Record<string, number> = {};
+      for (const nilai of alt.nilai_alternatif) {
+        kriteriaValues[nilai.kriteria.nama_kriteria] = Number(nilai.nilai);
+      }
+      return {
+        nama: alt.nama_alternatif ?? alt.kode_alternatif,
+        kode_alternatif: alt.kode_alternatif,
+        metadata: alt.metadata,
+        kriteria: kriteriaValues,
+      };
+    });
+
+    // 4. Kirim ke topsis-processor /calculate-json
+    const calculateResult: TopsisProcessorResponseRaw = await apiPost(
+      "/calculate-json",
+      {
+        alternatives: alternativesPayload,
+        criteria,
+      },
+    );
+
+    // 5. Simpan atau return hasil
+    if (wannaWrite) {
+      await handledPrisma.handleWrite(() =>
+        persistTopsisResults(calculateResult.data, criteria),
+      );
+      sendData(res, { created: calculateResult.data.length || 0 });
+    } else {
+      sendData(res, { data: calculateResult.data });
+    }
+  } catch (error) {
+    console.error(error);
+    if (error instanceof HttpError) {
+      sendError(res, error, error.status, error.message);
+      return;
+    }
+    sendError(res, error);
+  }
+});
+
 router.get("/data", async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 10;
     const sort = req.query.sortBy as string | undefined;
+    const verbose = req.query.verbose === "true";
     const orderBy = sort
       ? ({ [sort]: "asc" } as any)
       : { id_alternatif: "asc" as const };
+
     const alternatif = await paginate(
       (skip, take) =>
         prisma.alternatif.findMany({
           skip,
           take,
           orderBy,
-          include: {
-            hasil_topsis: true,
-            nilai_alternatif: {
-              include: {
-                kriteria: true,
+          include: verbose
+            ? {
+                hasil_topsis: true,
+                nilai_alternatif: {
+                  include: {
+                    kriteria: true,
+                  },
+                },
+              }
+            : {
+                hasil_topsis: {
+                  select: {
+                    nilai_preferensi: true,
+                    ranking: true,
+                    kategori: true,
+                  },
+                },
               },
-            },
-          },
         }),
       () => prisma.alternatif.count(),
       { page, pageSize: pageSize },
     );
-    sendData(res, alternatif, "Data retrieved successfully");
+
+    if (verbose) {
+      sendData(res, alternatif, "Data retrieved successfully");
+      return;
+    }
+
+    sendData(res, {
+      ...alternatif,
+      data: alternatif.data.map((item) => ({
+        kode_alternatif: item.kode_alternatif,
+        nama_alternatif: item.nama_alternatif,
+        hasil_topsis: item.hasil_topsis
+          ? {
+              nilai_preferensi: item.hasil_topsis.nilai_preferensi,
+              ranking: item.hasil_topsis.ranking,
+              kategori: item.hasil_topsis.kategori,
+            }
+          : null,
+      })),
+    });
   } catch (error) {
     console.error(error);
     sendError(res, new HttpError("Failed to retrieve data", 500));
