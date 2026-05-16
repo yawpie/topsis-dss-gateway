@@ -24,8 +24,8 @@ model User {
 model Alternatif {
   id_alternatif   Int     @id @default(autoincrement())
   kode_alternatif String  @unique @db.VarChar(50)
-  nama_alternatif String  @db.VarChar(255)
-  provinsi        String? @db.VarChar(255)
+  nama_alternatif String? @db.VarChar(255)
+  metadata        String? @db.Text
 
   nilai_alternatif NilaiAlternatif[]
   hasil_topsis     HasilTopsis?
